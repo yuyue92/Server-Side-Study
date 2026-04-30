@@ -22,23 +22,19 @@
 - Go 1.21+（需要 CGO，用于 SQLite 驱动）
 - GCC / MinGW（Windows 用户需要 CGO 支持）
 
-### 方式一：使用脚本（Linux / macOS）
-```bash
-chmod +x run.sh
-./run.sh
-```
+### 方式一：手动运行
+# 1. 删除旧依赖和 vendor 目录
+go mod edit -droprequire github.com/mattn/go-sqlite3
+rm -rf vendor/
 
-### 方式二：使用 Makefile
-```bash
-make run
-```
-
-### 方式三：手动运行
-```bash
+# 2. 拉取新驱动
+go get modernc.org/sqlite@v1.34.5
 go mod tidy
-go build -o student-system ./cmd/main.go
-./student-system
-```
+
+# 3. 直接编译（无需 GCC，无需 CGO）
+go build -o student-system.exe ./cmd/main.go
+
+---
 
 访问：**http://localhost:8080**
 
