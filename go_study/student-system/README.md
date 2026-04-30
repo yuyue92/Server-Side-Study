@@ -23,6 +23,7 @@
 - GCC / MinGW（Windows 用户需要 CGO 支持）
 
 ### 方式一：手动运行
+```
 # 1. 删除旧依赖和 vendor 目录
 go mod edit -droprequire github.com/mattn/go-sqlite3
 rm -rf vendor/
@@ -33,8 +34,7 @@ go mod tidy
 
 # 3. 直接编译（无需 GCC，无需 CGO）
 go build -o student-system.exe ./cmd/main.go
-
----
+```
 
 访问：**http://localhost:8080**
 
