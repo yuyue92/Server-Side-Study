@@ -24,15 +24,11 @@
 
 ### 方式一：手动运行
 ```
-# 1. 删除旧依赖和 vendor 目录
-go mod edit -droprequire github.com/mattn/go-sqlite3
-rm -rf vendor/
-
-# 2. 拉取新驱动
+# 1. 拉取
 go get modernc.org/sqlite@v1.34.5
 go mod tidy
 
-# 3. 直接编译（无需 GCC，无需 CGO）
+# 2. 直接编译（无需 GCC，无需 CGO）
 go build -o student-system.exe ./cmd/main.go
 ```
 
