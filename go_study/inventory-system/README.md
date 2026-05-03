@@ -1,77 +1,188 @@
 # 公司内部库存管理系统
 
-Go + SQLite 实现的库存管理系统，核心保证库存数据绝对准确，通过乐观锁防止高并发超卖。
+基于 Go + SQLite 的库存管理系统，支持防超卖、流水追踪、库存预警。
+本版本使用纯 Go 实现的 SQLite 驱动，**无需安装 GCC，开箱即用**。
 
-## 快速启动
+---
 
-### 环境要求
+## 环境要求
 
-- Go 1.22+
-- GCC（编译 CGO/SQLite 需要）
-  - Linux: `apt-get install gcc`
-  - macOS: `xcode-select --install`
-  - Windows: 安装 [TDM-GCC](https://jmeubank.github.io/tdm-gcc/)
+| 工具 | 版本要求 | 下载地址 |
+|------|---------|---------|
+| Go   | 1.22 +  | https://go.dev/dl/ |
 
-### 编译运行
+> 不需要 GCC，不需要 MinGW，不需要任何 C 编译器。
 
-```bash
-# 1. 克隆 / 解压项目
-cd inventory
+---
 
-# 2. 配置本地 SQLite 驱动（若无法访问 proxy.golang.org）
-#    直接使用 go get（需要网络）：
+## 启动步骤
+
+### 第一步：下载安装 Go
+
+1. 打开 https://go.dev/dl/
+2. 下载 `go1.22.x.windows-amd64.msi`
+3. 双击安装，全部默认，安装完成后**重新打开一个新的 CMD 窗口**
+4. 验证安装成功：
+   ```bat
+   go version
+   ```
+   看到类似 `go version go1.22.x windows/amd64` 即为成功
+
+---
+
+### 第二步：解压项目
+
+将 `inventory.tar.gz` 解压到任意目录，例如 `D:\inventory`
+
+```bat
+cd D:\inventory
+```
+
+> 如果没有解压工具，可用 Windows 11 自带的右键 → "解压到此处"，
+> 或在 PowerShell 中执行：
+> ```powershell
+> tar -xzf inventory.tar.gz
+> ```
+
+---
+
+### 第三步：修改驱动（从 mattn 换为 modernc，无需 GCC）
+
+**修改 `go.mod`**，将文件内容替换为：
+
+```
+module inventory
+
+go 1.22.2
+
+require modernc.org/sqlite v1.29.9
+```
+
+> 注意：删除原来的 `require github.com/mattn/go-sqlite3` 和 `replace` 那两行。
+
+**修改 `db/db.go`**，找到以下两处并修改：
+
+第 1 处，import 中替换驱动包名：
+```go
+// 改前
+_ "github.com/mattn/go-sqlite3"
+
+// 改后
+_ "modernc.org/sqlite"
+```
+
+第 2 处，`sql.Open` 的驱动名称：
+```go
+// 改前
+db, err := sql.Open("sqlite3", fmt.Sprintf("%s?_foreign_keys=on", dbPath))
+
+// 改后
+db, err := sql.Open("sqlite", fmt.Sprintf("%s?_foreign_keys=on", dbPath))
+```
+
+---
+
+### 第四步：拉取依赖
+
+```bat
 go mod tidy
-
-#    或使用本机系统包（Ubuntu/Debian）：
-# apt-get install golang-github-mattn-go-sqlite3-dev
-# go mod edit -replace github.com/mattn/go-sqlite3=/usr/share/gocode/src/github.com/mattn/go-sqlite3
-# go mod tidy
-
-# 3. 编译
-CGO_ENABLED=1 go build -o inventory_server .
-
-# 4. 启动
-./inventory_server
-# 输出：🚀 库存管理系统启动，监听端口 :8080
 ```
 
-### 环境变量
-
-| 变量          | 默认值           | 说明               |
-|-------------|--------------|------------------|
-| SERVER_PORT | 8080         | HTTP 监听端口         |
-| DB_PATH     | ./inventory.db | SQLite 数据库文件路径   |
-| LOG_LEVEL   | info         | 日志级别             |
-
-```bash
-SERVER_PORT=9090 DB_PATH=/data/inv.db ./inventory_server
+正常输出示例：
 ```
+go: finding module for package modernc.org/sqlite
+go: downloading modernc.org/sqlite v1.29.9
+...
+```
+
+> 如果下载慢，设置国内代理再重试：
+> ```bat
+> go env -w GOPROXY=https://goproxy.cn,direct
+> go mod tidy
+> ```
 
 ---
 
-## API 文档
+### 第五步：编译
 
-### 统一响应格式
-
-```json
-{
-  "code": 0,
-  "message": "success",
-  "data": { ... }
-}
+```bat
+go build -o inventory_server.exe .
 ```
 
-错误时 `code` 非 0，`message` 为错误描述。
+编译成功后目录下会出现 `inventory_server.exe`，无任何报错即为成功。
 
 ---
+
+### 第六步：启动服务
+
+```bat
+inventory_server.exe
+```
+
+看到以下输出说明启动成功：
+
+```
+2024/01/01 10:00:00 [DB] SQLite initialized, WAL mode active
+2024/01/01 10:00:00 🚀 库存管理系统启动，监听端口 :8080
+2024/01/01 10:00:00    数据库路径：./inventory.db
+```
+
+浏览器访问验证：
+```
+http://localhost:8080/health
+```
+返回 `{"status":"ok"}` 即为正常。
+
+按 `Ctrl + C` 可安全停止服务。
+
+---
+
+## 自定义配置
+
+启动时通过环境变量修改默认配置：
+
+```bat
+:: 修改端口
+set SERVER_PORT=9090
+inventory_server.exe
+
+:: 修改数据库路径
+set DB_PATH=D:\data\inventory.db
+inventory_server.exe
+
+:: 同时修改多项
+set SERVER_PORT=9090 && set DB_PATH=D:\data\inv.db && inventory_server.exe
+```
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| SERVER_PORT | 8080 | HTTP 监听端口 |
+| DB_PATH | ./inventory.db | 数据库文件路径，首次启动自动创建 |
+
+---
+
+## API 快速参考
+
+服务启动后，使用任意 HTTP 工具（Postman、Apifox、curl）调用以下接口。
+
+### 健康检查
+```
+GET http://localhost:8080/health
+```
 
 ### 商品管理
 
-#### 创建商品
-```
-POST /api/products
-```
+| 方法 | 地址 | 说明 |
+|------|------|------|
+| POST | /api/products | 创建商品 |
+| GET | /api/products | 商品列表（支持 keyword/page/page_size） |
+| GET | /api/products/{id} | 商品详情 |
+| PUT | /api/products/{id} | 更新商品信息 |
+| DELETE | /api/products/{id} | 软删除商品 |
+
+**创建商品示例：**
 ```json
+POST /api/products
 {
   "name": "农夫山泉矿泉水",
   "spec": "550ml/瓶",
@@ -81,175 +192,71 @@ POST /api/products
 }
 ```
 
-#### 商品列表
-```
-GET /api/products?keyword=矿泉&page=1&page_size=20
-```
-
-#### 商品详情
-```
-GET /api/products/{id}
-```
-
-#### 更新商品信息（支持部分更新）
-```
-PUT /api/products/{id}
-```
-```json
-{
-  "price": 3.0,
-  "warning_threshold": 15
-}
-```
-
-#### 删除商品（软删除）
-```
-DELETE /api/products/{id}
-```
-
----
-
 ### 库存操作
 
-所有操作均：事务保证原子性 + 乐观锁防超卖 + 自动写流水
+| 方法 | 地址 | 说明 |
+|------|------|------|
+| POST | /api/stock/in | 入库 |
+| POST | /api/stock/out | 出库 |
+| POST | /api/stock/loss | 损耗登记 |
 
-#### 入库
-```
-POST /api/stock/in
-```
+**出库示例：**
 ```json
+POST /api/stock/out
 {
   "product_id": 1,
-  "quantity": 100,
-  "remark": "采购单 PO-2024001",
+  "quantity": 10,
+  "remark": "销售订单 SO-001",
   "operator": "张三"
 }
 ```
 
-#### 出库
-```
-POST /api/stock/out
-```
-```json
-{
-  "product_id": 1,
-  "quantity": 10,
-  "remark": "销售订单 SO-2024001",
-  "operator": "李四"
-}
-```
-
-#### 损耗登记
-```
-POST /api/stock/loss
-```
-```json
-{
-  "product_id": 1,
-  "quantity": 2,
-  "remark": "破损处理",
-  "operator": "王五"
-}
-```
-
----
-
 ### 流水查询
 
 ```
-GET /api/logs?product_id=1&change_type=OUT&start_time=2024-01-01&end_time=2024-12-31&page=1&page_size=50
+GET /api/logs?product_id=1&change_type=OUT&page=1&page_size=20
 ```
 
-| 参数          | 说明                        |
-|-------------|---------------------------|
-| product_id  | 商品 ID（可选，不传则查全部）          |
-| change_type | IN / OUT / LOSS（可选）        |
-| start_time  | 开始时间，格式 `2024-01-01`（可选） |
-| end_time    | 结束时间（可选）                  |
-| page        | 页码，默认 1                   |
-| page_size   | 每页数量，默认 50，最大 200         |
-
----
+| 参数 | 说明 |
+|------|------|
+| product_id | 商品ID，不传则查全部 |
+| change_type | IN / OUT / LOSS，不传则查全部 |
+| start_time | 开始时间，格式 `2024-01-01` |
+| end_time | 结束时间 |
 
 ### 预警管理
 
-#### 预警列表
 ```
-GET /api/warnings?only_unresolved=true&page=1&page_size=20
-```
-
-#### 标记预警已处理
-```
-PUT /api/warnings/{id}/resolve
+GET  /api/warnings?only_unresolved=true
+PUT  /api/warnings/{id}/resolve
 ```
 
 ---
 
-### 健康检查
-```
-GET /health
-→ {"status":"ok"}
-```
+## 常见问题
 
----
+**Q：`go mod tidy` 提示 replacement directory does not exist**
+删除 `go.mod` 中的 `replace github.com/mattn/go-sqlite3 => ...` 这一行，保存后重试。
 
-## 架构说明
-
-```
-main.go           路由注册、依赖组装、优雅关闭
-config/           环境变量配置加载
-db/               SQLite 初始化（WAL 模式、PRAGMA、DDL）
-model/            数据结构 + 请求 DTO
-repository/       纯 SQL 封装（无业务逻辑）
-  product_repo    商品 CRUD + 乐观锁 UPDATE
-  log_repo        流水 append-only 写入 + 联查
-  warning_repo    预警记录 CRUD
-service/          业务逻辑层
-  product_service 商品增删改查
-  stock_service   核心：事务 + 乐观锁扣减 + 异步预警触发
-  warning_service 预警列表 + 标记处理
-handler/          HTTP 层：请求解析、参数校验、响应格式化
-pkg/
-  response/       统一 JSON 响应
-  notify/         通知适配器（默认日志，可扩展为钉钉/邮件）
-cmd/test/         集成自检测试（36 用例）
+**Q：下载依赖超时或失败**
+```bat
+go env -w GOPROXY=https://goproxy.cn,direct
+go mod tidy
 ```
 
-## 防超卖机制
-
-### 乐观锁流程
-
-```
-1. 事务内 SELECT（含 version 字段）
-2. 业务校验：stock < qty → 直接返回"库存不足"
-3. 带版本号 UPDATE：
-   WHERE id = ? AND version = ? AND stock >= ?
-4. affected_rows = 0 → 并发冲突 → 自动重试（最多 3 次）
-5. 成功后在同一事务内写流水
-6. COMMIT（原子提交）
+**Q：8080 端口被占用**
+```bat
+set SERVER_PORT=9090
+inventory_server.exe
 ```
 
-### SQLite 配置
+**Q：数据库文件在哪里**
+默认在 exe 同级目录下的 `inventory.db`，SQLite 单文件，直接备份该文件即可。
 
-```sql
-PRAGMA journal_mode=WAL;      -- 读写不互阻
-PRAGMA synchronous=NORMAL;    -- WAL 模式下安全
-PRAGMA busy_timeout=5000;     -- 写锁等待 5 秒而非报错
+**Q：如何开机自启**
+将以下内容保存为 `start.bat`，放入 `shell:startup` 文件夹（Win+R 输入该命令打开）：
+```bat
+@echo off
+cd /d D:\inventory
+start inventory_server.exe
 ```
-
-## 预警机制
-
-- 每次出库/损耗后，若 `after_stock <= warning_threshold`，异步投递到 channel
-- 后台 goroutine 消费 channel，写预警记录并调用 Notifier
-- **防重复**：同一商品存在未处理预警时，不重复创建
-- Notifier 接口可扩展：目前默认输出日志，可替换为钉钉/企业微信 webhook
-
-## 扩展指引
-
-| 需求          | 改动点                                    |
-|-------------|----------------------------------------|
-| 接入钉钉通知      | 实现 `notify.Notifier` 接口，替换 `main.go` 中注入 |
-| 多仓库         | products / stock_logs 加 `warehouse_id` 字段 |
-| JWT 鉴权      | 在 `main.go` 加中间件，读取 Authorization header |
-| 换 PostgreSQL | 只需替换 repository 层实现，service/handler 不变  |
-| 批量入库 CSV    | 新增 handler 解析 multipart，循环调用 StockService |
