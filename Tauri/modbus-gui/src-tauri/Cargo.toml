@@ -1,0 +1,28 @@
+[package]
+name = "modbus-gui"
+version = "0.1.0"
+description = "Modbus RTU 控制上位机"
+authors = []
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "modbus_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# ── Modbus 预留依赖（解注释后启用）──────────────────────────
+# tokio = { version = "1", features = ["full"] }
+# tokio-modbus = "0.5"
+# serialport = "4"
