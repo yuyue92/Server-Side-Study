@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Scheduler 前端联调页</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-main">
+        <p class="eyebrow">Hospital Scheduler · API Debug Console</p>
+        <h1>医院内部排班系统前端联调页</h1>
+        <p class="hero-desc">
+          原生 HTML + CSS + JavaScript 编写，覆盖科室、班次、员工、排班格、手动排班、自动排班、工时报表、应急调度、换班审批等核心接口。
+        </p>
+      </div>
+      <div class="status-panel">
+        <div class="status-row">
+          <span>接口基址</span>
+          <strong id="currentBaseBadge">未配置</strong>
+        </div>
+        <div class="status-row">
+          <span>最近请求</span>
+          <strong id="lastRequestBadge">暂无</strong>
+        </div>
+        <div class="status-row">
+          <span>健康状态</span>
+          <strong id="healthBadge" class="pill neutral">未检查</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="toolbar card">
+      <div class="toolbar-grid">
+        <label class="field span-2">
+          <span>API Base URL</span>
+          <input id="apiBaseInput" type="text" value="http://localhost:8080/api/v1" autocomplete="off">
+        </label>
+        <div class="toolbar-actions">
+          <button id="saveBaseBtn" class="btn primary" type="button">保存地址</button>
+          <button id="healthBtn" class="btn" type="button">健康检查</button>
+          <button id="loadSeedBtn" class="btn" type="button">刷新基础数据</button>
+        </div>
+      </div>
+      <div class="tips">
+        <span>默认后端：</span><code>http://localhost:8080/api/v1</code>
+        <span>健康检查：</span><code>/health</code>
+      </div>
+    </section>
+
+    <nav class="section-nav card">
+      <a href="#departmentsSection">科室</a>
+      <a href="#shiftTypesSection">班次类型</a>
+      <a href="#staffSection">员工</a>
+      <a href="#slotsSection">排班格</a>
+      <a href="#assignmentsSection">手动排班</a>
+      <a href="#autoScheduleSection">自动排班</a>
+      <a href="#workloadSection">工时报表</a>
+      <a href="#emergencySection">应急调度</a>
+      <a href="#swapsSection">换班审批</a>
+      <a href="#requestLogSection">请求日志</a>
+    </nav>
+
+    <main class="grid-main">
+      <section id="departmentsSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Departments</p>
+            <h2>科室管理</h2>
+          </div>
+          <button id="refreshDepartmentsBtn" class="btn small" type="button">刷新科室</button>
+        </div>
+        <div class="two-col">
+          <form id="departmentCreateForm" class="panel form-panel">
+            <h3>创建科室</h3>
+            <label class="field">
+              <span>科室名称 name</span>
+              <input name="name" type="text" placeholder="例如：急诊科" required>
+            </label>
+            <label class="field">
+              <span>科室编码 code</span>
+              <input name="code" type="text" placeholder="例如：EMERGENCY" required>
+            </label>
+            <button class="btn primary full" type="submit">POST /departments</button>
+          </form>
+          <div class="panel table-panel">
+            <div class="panel-title-row">
+              <h3>科室列表</h3>
+              <span id="departmentCount" class="count-badge">0</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>编码</th>
+                    <th>启用</th>
+                    <th>创建时间</th>
+                  </tr>
+                </thead>
+                <tbody id="departmentsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="shiftTypesSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Shift Types</p>
+            <h2>班次类型</h2>
+          </div>
+          <button id="refreshShiftTypesBtn" class="btn small" type="button">刷新班次类型</button>
+        </div>
+        <div class="panel table-panel single">
+          <div class="panel-title-row">
+            <h3>班次类型列表</h3>
+            <span id="shiftTypeCount" class="count-badge">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>编码</th>
+                  <th>名称</th>
+                  <th>开始</th>
+                  <th>结束</th>
+                  <th>创建时间</th>
+                </tr>
+              </thead>
+              <tbody id="shiftTypesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="staffSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Staff</p>
+            <h2>员工管理</h2>
+          </div>
+          <div class="inline-actions">
+            <button id="refreshStaffBtn" class="btn small" type="button">刷新员工</button>
+          </div>
+        </div>
+        <div class="two-col">
+          <form id="staffCreateForm" class="panel form-panel">
+            <h3>创建员工</h3>
+            <label class="field">
+              <span>工号 employee_no</span>
+              <input name="employee_no" type="text" placeholder="例如：D010" required>
+            </label>
+            <label class="field">
+              <span>姓名 name</span>
+              <input name="name" type="text" placeholder="例如：孙医生" required>
+            </label>
+            <label class="field">
+              <span>角色 role</span>
+              <select name="role" required>
+                <option value="DOCTOR">DOCTOR</option>
+                <option value="NURSE">NURSE</option>
+                <option value="INTERN">INTERN</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>所属科室 department_id</span>
+              <select name="department_id" id="staffDepartmentSelect" required></select>
+            </label>
+            <label class="field">
+              <span>资质 qualifications</span>
+              <input name="qualifications" type="text" placeholder="多个值用英文逗号分隔，如：EMERGENCY,SURGERY">
+            </label>
+            <button class="btn primary full" type="submit">POST /staff</button>
+          </form>
+          <div class="panel form-panel">
+            <h3>员工查询</h3>
+            <form id="staffQueryForm" class="compact-form">
+              <label class="field">
+                <span>按科室过滤 department_id</span>
+                <select name="department_id" id="staffQueryDepartmentSelect"></select>
+              </label>
+              <button class="btn full" type="submit">GET /staff</button>
+            </form>
+            <form id="staffDetailForm" class="compact-form split-top">
+              <label class="field">
+                <span>单个员工 ID</span>
+                <input name="staff_id" type="number" min="1" placeholder="例如：3" required>
+              </label>
+              <button class="btn full" type="submit">GET /staff/:id</button>
+            </form>
+            <div id="staffDetailResult" class="json-result small-json">暂无单个员工详情。</div>
+          </div>
+        </div>
+        <div class="panel table-panel block-top">
+          <div class="panel-title-row">
+            <h3>员工列表</h3>
+            <span id="staffCount" class="count-badge">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>工号</th>
+                  <th>姓名</th>
+                  <th>角色</th>
+                  <th>科室</th>
+                  <th>资质</th>
+                  <th>启用</th>
+                  <th>创建时间</th>
+                </tr>
+              </thead>
+              <tbody id="staffTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="slotsSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Slots</p>
+            <h2>排班格管理</h2>
+          </div>
+          <button id="refreshSlotsBtn" class="btn small" type="button">按当前条件查询</button>
+        </div>
+        <div class="two-col">
+          <form id="slotCreateForm" class="panel form-panel">
+            <h3>创建排班格</h3>
+            <label class="field">
+              <span>科室 department_id</span>
+              <select name="department_id" id="slotDepartmentSelect" required></select>
+            </label>
+            <label class="field">
+              <span>班次 shift_type_id</span>
+              <select name="shift_type_id" id="slotShiftTypeSelect" required></select>
+            </label>
+            <label class="field">
+              <span>日期 date</span>
+              <input name="date" type="date" required>
+            </label>
+            <label class="field">
+              <span>所需人数 required_staff</span>
+              <input name="required_staff" type="number" min="1" value="1" required>
+            </label>
+            <label class="field">
+              <span>所需角色 required_role</span>
+              <select name="required_role">
+                <option value="">不限</option>
+                <option value="DOCTOR">DOCTOR</option>
+                <option value="NURSE">NURSE</option>
+                <option value="INTERN">INTERN</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>所需资质 required_quals</span>
+              <input name="required_quals" type="text" placeholder="多个值用英文逗号分隔，如：ICU,EMERGENCY">
+            </label>
+            <button class="btn primary full" type="submit">POST /slots</button>
+          </form>
+          <form id="slotQueryForm" class="panel form-panel">
+            <h3>查询排班格</h3>
+            <label class="field">
+              <span>科室 department_id</span>
+              <select name="department_id" id="slotQueryDepartmentSelect" required></select>
+            </label>
+            <label class="field">
+              <span>开始日期 from</span>
+              <input name="from" type="date" required>
+            </label>
+            <label class="field">
+              <span>结束日期 to</span>
+              <input name="to" type="date" required>
+            </label>
+            <button class="btn full" type="submit">GET /slots</button>
+          </form>
+        </div>
+        <div class="panel table-panel block-top">
+          <div class="panel-title-row">
+            <h3>排班格列表</h3>
+            <span id="slotCount" class="count-badge">0</span>
+          </div>
+          <div class="table-wrap wide-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>日期</th>
+                  <th>科室</th>
+                  <th>班次</th>
+                  <th>所需人数</th>
+                  <th>已分配</th>
+                  <th>所需角色</th>
+                  <th>所需资质</th>
+                  <th>状态</th>
+                  <th>创建时间</th>
+                </tr>
+              </thead>
+              <tbody id="slotsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="assignmentsSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Assignments</p>
+            <h2>手动排班与取消排班</h2>
+          </div>
+        </div>
+        <div class="two-col">
+          <form id="assignmentCreateForm" class="panel form-panel">
+            <h3>手动排班</h3>
+            <label class="field">
+              <span>员工 staff_id</span>
+              <select name="staff_id" id="assignmentStaffSelect" required></select>
+            </label>
+            <label class="field">
+              <span>排班格 slot_id</span>
+              <select name="slot_id" id="assignmentSlotSelect" required></select>
+            </label>
+            <label class="field">
+              <span>创建人 created_by</span>
+              <input name="created_by" type="number" min="0" value="1" required>
+            </label>
+            <button class="btn primary full" type="submit">POST /assignments</button>
+            <p class="mini-tip">若触发硬规则，后端应返回 422；若触发软规则，后端可能返回 warnings。</p>
+          </form>
+          <form id="assignmentDeleteForm" class="panel form-panel">
+            <h3>取消排班</h3>
+            <label class="field">
+              <span>排班记录 ID</span>
+              <input name="assignment_id" type="number" min="1" placeholder="例如：12" required>
+            </label>
+            <button class="btn danger full" type="submit">DELETE /assignments/:id</button>
+            <div id="assignmentResult" class="json-result small-json">暂无排班操作结果。</div>
+          </form>
+        </div>
+      </section>
+
+      <section id="autoScheduleSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Auto Schedule</p>
+            <h2>自动排班</h2>
+          </div>
+        </div>
+        <div class="two-col">
+          <form id="autoScheduleForm" class="panel form-panel">
+            <h3>按时间区间自动排班</h3>
+            <label class="field">
+              <span>科室 department_id</span>
+              <select name="department_id" id="autoDepartmentSelect" required></select>
+            </label>
+            <label class="field">
+              <span>开始日期 from</span>
+              <input name="from" type="date" required>
+            </label>
+            <label class="field">
+              <span>结束日期 to</span>
+              <input name="to" type="date" required>
+            </label>
+            <button class="btn primary full" type="submit">POST /schedule/auto</button>
+          </form>
+          <div class="panel">
+            <h3>自动排班结果</h3>
+            <div id="autoScheduleResult" class="json-result">暂无自动排班结果。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="workloadSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Workload</p>
+            <h2>工时报表</h2>
+          </div>
+          <button id="refreshWorkloadBtn" class="btn small" type="button">刷新报表</button>
+        </div>
+        <form id="workloadQueryForm" class="panel inline-form">
+          <label class="field compact-field">
+            <span>科室 department_id</span>
+            <select name="department_id" id="workloadDepartmentSelect" required></select>
+          </label>
+          <button class="btn" type="submit">GET /workload</button>
+        </form>
+        <div class="panel table-panel block-top">
+          <div class="panel-title-row">
+            <h3>工时报表列表</h3>
+            <span id="workloadCount" class="count-badge">0</span>
+          </div>
+          <div class="table-wrap wide-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>staff_id</th>
+                  <th>total_hours</th>
+                  <th>month_hours</th>
+                  <th>week_hours</th>
+                  <th>consecutive_shifts</th>
+                  <th>last_shift_end</th>
+                  <th>night_shifts_this_month</th>
+                  <th>updated_at</th>
+                  <th>附加信息</th>
+                </tr>
+              </thead>
+              <tbody id="workloadTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="emergencySection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Emergency</p>
+            <h2>应急调度</h2>
+          </div>
+        </div>
+        <div class="two-col">
+          <form id="emergencyCandidatesForm" class="panel form-panel">
+            <h3>查询可替班人员</h3>
+            <label class="field">
+              <span>排班格 slotId</span>
+              <input name="slot_id" type="number" min="1" placeholder="例如：1" required>
+            </label>
+            <button class="btn full" type="submit">GET /emergency/candidates/:slotId</button>
+          </form>
+          <form id="emergencyAssignForm" class="panel form-panel">
+            <h3>应急分配</h3>
+            <label class="field">
+              <span>请求体 JSON（接口文档未给出详细字段，保留可编辑）</span>
+              <textarea name="payload" id="emergencyPayloadTextarea" rows="9">{
+  "staff_id": 1,
+  "slot_id": 1,
+  "created_by": 1,
+  "note": "紧急调度"
+}</textarea>
+            </label>
+            <button class="btn primary full" type="submit">POST /emergency/assign</button>
+          </form>
+        </div>
+        <div class="two-col block-top">
+          <div class="panel table-panel">
+            <div class="panel-title-row">
+              <h3>应急候选人</h3>
+              <span id="emergencyCandidateCount" class="count-badge">0</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="emergencyCandidatesThead"></thead>
+                <tbody id="emergencyCandidatesTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>应急分配结果</h3>
+            <div id="emergencyAssignResult" class="json-result">暂无应急分配结果。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="swapsSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Swaps</p>
+            <h2>换班申请与审批</h2>
+          </div>
+          <button id="refreshPendingSwapsBtn" class="btn small" type="button">刷新待审</button>
+        </div>
+        <div class="three-col">
+          <form id="swapCreateForm" class="panel form-panel">
+            <h3>提交换班申请</h3>
+            <label class="field">
+              <span>申请人 requester_id</span>
+              <select name="requester_id" id="swapRequesterSelect" required></select>
+            </label>
+            <label class="field">
+              <span>当前排班 slot_id</span>
+              <select name="slot_id" id="swapSlotSelect" required></select>
+            </label>
+            <label class="field">
+              <span>目标员工 target_staff_id</span>
+              <select name="target_staff_id" id="swapTargetStaffSelect"></select>
+            </label>
+            <label class="field">
+              <span>申请原因 reason</span>
+              <textarea name="reason" rows="4" placeholder="例如：家庭急事"></textarea>
+            </label>
+            <button class="btn primary full" type="submit">POST /swaps</button>
+          </form>
+          <form id="swapReviewForm" class="panel form-panel">
+            <h3>审批换班申请</h3>
+            <label class="field">
+              <span>申请 ID</span>
+              <input name="swap_id" type="number" min="1" placeholder="例如：1" required>
+            </label>
+            <label class="field">
+              <span>审批动作 action</span>
+              <select name="action" required>
+                <option value="approve">approve</option>
+                <option value="reject">reject</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>审批人 reviewer_id</span>
+              <select name="reviewer_id" id="swapReviewerSelect" required></select>
+            </label>
+            <label class="field">
+              <span>备注 note</span>
+              <textarea name="note" rows="4" placeholder="例如：同意换班"></textarea>
+            </label>
+            <button class="btn full" type="submit">POST /swaps/:id/review</button>
+          </form>
+          <div class="panel">
+            <h3>换班操作结果</h3>
+            <div id="swapActionResult" class="json-result">暂无换班操作结果。</div>
+          </div>
+        </div>
+        <div class="panel table-panel block-top">
+          <div class="panel-title-row">
+            <h3>待审核换班列表</h3>
+            <span id="pendingSwapCount" class="count-badge">0</span>
+          </div>
+          <div class="table-wrap wide-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>requester_id</th>
+                  <th>requester_slot_id / slot_id</th>
+                  <th>target_staff_id</th>
+                  <th>reason</th>
+                  <th>status</th>
+                  <th>review_note</th>
+                  <th>reviewed_by</th>
+                  <th>created_at</th>
+                  <th>updated_at</th>
+                </tr>
+              </thead>
+              <tbody id="pendingSwapsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="requestLogSection" class="card module-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Request Log</p>
+            <h2>请求日志与响应详情</h2>
+          </div>
+          <div class="inline-actions">
+            <button id="clearLogBtn" class="btn small danger-outline" type="button">清空日志</button>
+          </div>
+        </div>
+        <div class="two-col log-layout">
+          <div class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>方法</th>
+                    <th>路径</th>
+                    <th>状态</th>
+                    <th>耗时</th>
+                  </tr>
+                </thead>
+                <tbody id="requestLogTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>选中请求详情</h3>
+            <div id="requestDetailBox" class="json-result tall-json">点击左侧请求日志查看详情。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastHost" class="toast-host" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
