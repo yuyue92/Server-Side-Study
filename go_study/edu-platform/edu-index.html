@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduPlatform 管理系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root {
+  --primary:#4361ee;--primary-light:#eef0fd;--primary-dark:#3451d1;
+  --secondary:#7209b7;--success:#06d6a0;--danger:#ef233c;--warning:#f77f00;
+  --bg:#f4f6fb;--surface:#fff;--border:#e8ecf4;--text:#1a1f36;--muted:#8892b0;
+  --sidebar-w:240px;--sidebar-bg:#0f1523;--topbar-h:60px;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--serif:'Playfair Display',serif;
+  --radius:12px;--shadow:0 2px 12px rgba(67,97,238,.08);--shadow-md:0 8px 32px rgba(67,97,238,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px}
+
+/* ── AUTH ── */
+#auth-screen{min-height:100vh;display:flex;background:linear-gradient(135deg,#0f1523 0%,#1a2540 50%,#0f1523 100%);position:relative;overflow:hidden}
+#auth-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 20% 50%,rgba(67,97,238,.15) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 80% 20%,rgba(114,9,183,.12) 0%,transparent 50%);pointer-events:none}
+.auth-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;position:relative;z-index:1}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:56px}
+.auth-brand-icon{width:44px;height:44px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff}
+.auth-brand-name{font-family:var(--serif);font-size:22px;color:#fff;letter-spacing:.02em}
+.auth-headline{font-size:42px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:16px}
+.auth-headline span{color:#7c8cff}
+.auth-sub{color:#8892b0;font-size:16px;line-height:1.7;max-width:380px}
+.auth-features{margin-top:48px;display:flex;flex-direction:column;gap:16px}
+.auth-feature{display:flex;align-items:center;gap:14px;color:#c8d0e7;font-size:14px}
+.auth-feature-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0}
+.auth-right{width:480px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:40px 48px;position:relative;z-index:1}
+.auth-card{background:var(--surface);border-radius:20px;padding:40px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;text-align:center;padding:8px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);transition:all .2s;user-select:none}
+.auth-tab.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:block}
+.form-control{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--sans);font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:16px}
+.form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(67,97,238,.1)}
+.form-control::placeholder{color:#c0c7d8}
+.role-picker{display:flex;gap:10px;margin-bottom:16px}
+.role-opt{flex:1;padding:12px 10px;border-radius:10px;border:1.5px solid var(--border);text-align:center;cursor:pointer;transition:all .2s;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px}
+.role-opt .role-icon{font-size:22px}
+.role-opt .role-name{font-size:12px;font-weight:600;color:var(--muted)}
+.role-opt.active{border-color:var(--primary);background:var(--primary-light)}
+.role-opt.active .role-name{color:var(--primary)}
+.btn-primary-full{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary-full:hover{background:var(--primary-dark)}
+.btn-primary-full:active{transform:scale(.98)}
+.btn-primary-full:disabled{background:#c0c7d8;cursor:not-allowed}
+.auth-msg{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:13px;display:none}
+.auth-msg.error{background:#fef2f2;color:var(--danger);border:1px solid #fecaca;display:block}
+.auth-msg.success{background:#f0fdf9;color:#059669;border:1px solid #a7f3d0;display:block}
+.quick-btns{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── APP SHELL ── */
+#app-screen{display:none;height:100vh;flex-direction:column}
+#app-screen.visible{display:flex}
+#topbar{height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;z-index:50}
+.topbar-brand{display:flex;align-items:center;gap:10px;width:var(--sidebar-w);flex-shrink:0}
+.topbar-brand-icon{width:34px;height:34px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.topbar-brand-name{font-family:var(--serif);font-size:17px;color:var(--text)}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);flex:1}
+.env-group{display:flex;align-items:center;gap:8px}
+.env-label{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+#baseUrlInput{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;width:200px;transition:border-color .2s}
+#baseUrlInput:focus{border-color:var(--primary)}
+.divider-v{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.topbar-user{display:flex;align-items:center;gap:10px}
+.user-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.av-student{background:linear-gradient(135deg,#06d6a0,#118ab2)}
+.av-teacher{background:linear-gradient(135deg,#f77f00,#d62828)}
+.av-admin{background:linear-gradient(135deg,#7209b7,#4361ee)}
+.user-info .uname{font-size:13px;font-weight:600;color:var(--text)}
+.user-info .urole{font-size:11px;color:var(--muted);text-transform:capitalize}
+.btn-logout{background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;font-family:var(--sans);font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+/* ── BODY ── */
+#app-body{display:flex;flex:1;overflow:hidden}
+#sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:16px 0}
+#sidebar::-webkit-scrollbar{width:0}
+.nav-sec-title{font-size:10px;font-weight:700;letter-spacing:.14em;color:#3a4460;text-transform:uppercase;padding:14px 20px 5px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;color:#7a89a8;font-size:13.5px;font-weight:500;transition:all .15s;border-left:3px solid transparent;user-select:none;margin:1px 0}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#c8d0e7}
+.nav-item.active{background:rgba(67,97,238,.15);color:#fff;border-left-color:var(--primary)}
+.nav-item .ni{font-size:16px;flex-shrink:0;width:20px;text-align:center}
+.nav-divider{height:1px;background:#1e2a40;margin:8px 16px}
+#content{flex:1;overflow-y:auto;padding:28px 32px}
+#content::-webkit-scrollbar{width:6px}
+#content::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block}
+.page-header{margin-bottom:24px}
+.page-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:14px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#fafbfe}
+.card-header-title{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.card-body{padding:20px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sc-blue::before{background:var(--primary)}.sc-green::before{background:var(--success)}.sc-orange::before{background:var(--warning)}.sc-purple::before{background:var(--secondary)}
+.stat-icon{font-size:26px;margin-bottom:10px}
+.stat-val{font-size:28px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--muted);font-weight:600}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn-send{background:var(--primary);color:#fff}.btn-send:hover{background:var(--primary-dark)}.btn-send:active{transform:scale(.97)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#05b88a}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--muted)}.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-danger-outline{background:transparent;border:1.5px solid #fecaca;color:var(--danger)}.btn-danger-outline:hover{background:#fef2f2}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+
+/* ── FORM FIELDS ── */
+.field-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+.field-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.field-group label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.field-group input,.field-group select,.field-group textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:13.5px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s;width:100%}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--primary)}
+.field-group textarea{resize:vertical;min-height:80px;font-family:var(--mono);font-size:12px;line-height:1.6}
+
+/* ── RESPONSE ── */
+.res-bar{display:flex;align-items:center;gap:12px;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--border)}
+.status-badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+.st-ok{background:#ecfdf5;color:#059669}.st-err{background:#fef2f2;color:var(--danger)}
+.res-time{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+.res-body{background:#0f1523;border-radius:10px;padding:16px;font-family:var(--mono);font-size:12px;color:#c8d0e7;overflow:auto;max-height:300px;line-height:1.7;white-space:pre-wrap;word-break:break-all;border:1px solid #1e2a40}
+.res-body::-webkit-scrollbar{width:4px}
+.res-body::-webkit-scrollbar-thumb{background:#1e2a40;border-radius:4px}
+.jk{color:#79b8ff}.js{color:#9ecbff}.ji{color:#ffab70}.jb{color:#85e89d}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:#fafbfe;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfe}
+
+/* ── TAGS / BADGES ── */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tg-blue{background:var(--primary-light);color:var(--primary)}.tg-green{background:#ecfdf5;color:#059669}.tg-orange{background:#fffbeb;color:#d97706}.tg-gray{background:var(--bg);color:var(--muted)}.tg-purple{background:#faf5ff;color:#7c3aed}
+.method{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px}
+.m-get{background:#ecfdf5;color:#059669}.m-post{background:#eff6ff;color:#2563eb}.m-patch{background:#fffbeb;color:#d97706}.m-delete{background:#fef2f2;color:#dc2626}
+
+/* ── ALERT ── */
+.alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
+.alert-info{background:var(--primary-light);color:var(--primary);border:1px solid #c7d2fe}
+.alert-warning{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.alert-success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.alert-danger{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:16px}
+.progress-track{height:8px;background:var(--border);border-radius:10px;overflow:hidden;margin:10px 0 6px}
+.progress-fill{height:100%;border-radius:10px;transition:width .5s}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;top:76px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;box-shadow:var(--shadow-md);font-size:13px;display:flex;align-items:center;gap:10px;min-width:260px;max-width:380px;animation:slideIn .25s ease;pointer-events:auto}
+.toast.hide{animation:slideOut .25s ease forwards}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{to{opacity:0;transform:translateX(30px)}}
+.toast-success{border-left:4px solid var(--success)}.toast-error{border-left:4px solid var(--danger)}.toast-info{border-left:4px solid var(--primary)}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-state i{font-size:48px;opacity:.3;display:block;margin-bottom:12px}
+.mono{font-family:var(--mono)}
+.text-muted{color:var(--muted)}
+.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.info-item{padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+.info-item .il{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.info-item .iv{font-size:14px;font-weight:600;color:var(--text)}
+
+@media(max-width:900px){.auth-left{display:none}.auth-right{width:100%}:root{--sidebar-w:200px}}
+@media(max-width:640px){:root{--sidebar-w:0px}#sidebar{display:none}#content{padding:16px}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ AUTH ════════════════ -->
+<div id="auth-screen">
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="auth-brand-icon"><i class="bi bi-mortarboard-fill"></i></div>
+      <span class="auth-brand-name">EduPlatform</span>
+    </div>
+    <div class="auth-headline">在线教育<br><span>管理平台</span></div>
+    <div class="auth-sub">为学生和教师提供完整的在线学习、课程管理和进度追踪体验。</div>
+    <div class="auth-features">
+      <div class="auth-feature"><div class="auth-feature-dot"></div>角色权限分离，教师专属课程管理</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div>实时学习进度追踪与可视化</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div>完整 RESTful API 交互调试</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchTab('login')">登 录</div>
+        <div class="auth-tab" onclick="switchTab('register')">注 册</div>
+      </div>
+
+      <div id="login-form">
+        <label class="form-label">邮箱</label>
+        <input class="form-control" id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email">
+        <label class="form-label">密码</label>
+        <input class="form-control" id="loginPwd" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button class="btn-primary-full" id="loginBtn" onclick="doLogin()">
+          <i class="bi bi-box-arrow-in-right"></i> 登录
+        </button>
+        <div class="quick-btns">
+          <button class="btn btn-sm btn-outline" onclick="quickFill('student')"><i class="bi bi-person"></i> 学生账号</button>
+          <button class="btn btn-sm btn-outline" onclick="quickFill('teacher')"><i class="bi bi-person-workspace"></i> 教师账号</button>
+        </div>
+      </div>
+
+      <div id="register-form" style="display:none">
+        <label class="form-label">用户名</label>
+        <input class="form-control" id="regUsername" placeholder="至少3个字符">
+        <label class="form-label">邮箱</label>
+        <input class="form-control" id="regEmail" type="email" placeholder="your@email.com">
+        <label class="form-label">密码</label>
+        <input class="form-control" id="regPwd" type="password" placeholder="至少6个字符">
+        <label class="form-label">选择角色</label>
+        <div class="role-picker">
+          <div class="role-opt active" onclick="pickRole('student',this)">
+            <div class="role-icon">🎓</div><div class="role-name">学生</div>
+          </div>
+          <div class="role-opt" onclick="pickRole('teacher',this)">
+            <div class="role-icon">👨‍🏫</div><div class="role-name">教师</div>
+          </div>
+        </div>
+        <button class="btn-primary-full" id="regBtn" onclick="doRegister()">
+          <i class="bi bi-person-plus"></i> 注册账号
+        </button>
+      </div>
+
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ APP ════════════════ -->
+<div id="app-screen">
+  <div id="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-brand-icon"><i class="bi bi-mortarboard-fill"></i></div>
+      <span class="topbar-brand-name">EduPlatform</span>
+    </div>
+    <span id="topbarTitle" class="topbar-title"></span>
+    <div class="env-group">
+      <span class="env-label">API BASE</span>
+      <input id="baseUrlInput" value="http://localhost:8080">
+    </div>
+    <div class="divider-v"></div>
+    <div class="topbar-user">
+      <div class="user-avatar" id="userAvatar"></div>
+      <div class="user-info">
+        <div class="uname" id="uname"></div>
+        <div class="urole" id="urole"></div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> 退出</button>
+  </div>
+
+  <div id="app-body">
+    <nav id="sidebar">
+      <div class="nav-sec-title">主菜单</div>
+      <div class="nav-item active" onclick="go('dashboard')" id="n-dashboard">
+        <span class="ni"><i class="bi bi-grid-1x2"></i></span>概览
+      </div>
+      <div class="nav-item" onclick="go('profile')" id="n-profile">
+        <span class="ni"><i class="bi bi-person-circle"></i></span>个人信息
+      </div>
+
+      <div id="student-nav" style="display:none">
+        <div class="nav-divider"></div>
+        <div class="nav-sec-title">学习中心</div>
+        <div class="nav-item" onclick="go('browse')" id="n-browse">
+          <span class="ni"><i class="bi bi-collection-play"></i></span>浏览课程
+        </div>
+        <div class="nav-item" onclick="go('progress')" id="n-progress">
+          <span class="ni"><i class="bi bi-graph-up-arrow"></i></span>学习进度
+        </div>
+      </div>
+
+      <div id="teacher-nav" style="display:none">
+        <div class="nav-divider"></div>
+        <div class="nav-sec-title">教学管理</div>
+        <div class="nav-item" onclick="go('mycourses')" id="n-mycourses">
+          <span class="ni"><i class="bi bi-journals"></i></span>我的课程
+        </div>
+        <div class="nav-item" onclick="go('create')" id="n-create">
+          <span class="ni"><i class="bi bi-plus-circle"></i></span>创建课程
+        </div>
+      </div>
+
+      <div class="nav-divider"></div>
+      <div class="nav-sec-title">系统</div>
+      <div class="nav-item" onclick="go('debug')" id="n-debug">
+        <span class="ni"><i class="bi bi-terminal"></i></span>API 控制台
+      </div>
+      <div class="nav-item" onclick="go('health')" id="n-health">
+        <span class="ni"><i class="bi bi-heart-pulse"></i></span>健康检查
+      </div>
+    </nav>
+
+    <main id="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="p-dashboard">
+        <div class="page-header">
+          <div class="page-title" id="dash-welcome">欢迎回来</div>
+          <div class="page-sub" id="dash-sub"></div>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="alert alert-info" id="role-guide">
+          <i class="bi bi-info-circle-fill" style="font-size:18px;flex-shrink:0"></i>
+          <div id="role-guide-text"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-clock-history"></i> 请求历史</span></div>
+          <div style="padding:0" id="log-table"><div class="empty-state"><i class="bi bi-activity"></i>暂无记录，开始使用功能吧</div></div>
+        </div>
+      </div>
+
+      <!-- ── PROFILE ── -->
+      <div class="page" id="p-profile">
+        <div class="page-header">
+          <div class="page-title">个人信息</div>
+          <div class="page-sub">当前账号的基本信息</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-title"><i class="bi bi-person-badge"></i> 账号详情</span>
+            <button class="btn btn-sm btn-send" onclick="loadProfile()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+          </div>
+          <div class="card-body" id="profile-content"><div class="empty-state"><i class="bi bi-person"></i>点击刷新加载</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-code"></i> 接口响应</span><span class="tag tg-blue" style="margin-left:auto">GET /api/v1/users/me</span></div>
+          <div class="card-body" id="profile-res"></div>
+        </div>
+      </div>
+
+      <!-- ── BROWSE (STUDENT) ── -->
+      <div class="page" id="p-browse">
+        <div class="page-header">
+          <div class="page-title">浏览课程</div>
+          <div class="page-sub">查看所有已发布课程</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-title"><i class="bi bi-collection-play"></i> 课程列表</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="env-label">每页</span>
+              <select id="browseSize" style="border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;outline:none">
+                <option>5</option><option selected>10</option><option>20</option>
+              </select>
+              <button class="btn btn-sm btn-send" onclick="loadCourseList()"><i class="bi bi-arrow-clockwise"></i> 加载</button>
+            </div>
+          </div>
+          <div id="course-list-body"><div class="empty-state"><i class="bi bi-collection-play"></i>点击加载</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-eye"></i> 查看课程详情</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field-group" style="max-width:180px"><label>课程 ID</label><input id="detail-id" value="1"></div>
+              <button class="btn btn-send" style="margin-top:22px" onclick="loadCourseDetail()"><i class="bi bi-eye"></i> 查看</button>
+            </div>
+            <div id="course-detail-res"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PROGRESS (STUDENT) ── -->
+      <div class="page" id="p-progress">
+        <div class="page-header">
+          <div class="page-title">学习进度</div>
+          <div class="page-sub">记录观看进度，查询完成情况</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-pencil-square"></i> 更新章节进度</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field-group"><label>课程 ID</label><input id="p-cid" value="1"></div>
+              <div class="field-group"><label>章节 ID</label><input id="p-chid" value="1"></div>
+              <div class="field-group"><label>已观看(秒)</label><input id="p-secs" type="number" value="300"></div>
+              <div class="field-group" style="max-width:110px"><label>已完成</label>
+                <select id="p-done"><option value="false">否</option><option value="true">是</option></select>
+              </div>
+              <button class="btn btn-send" style="margin-top:22px" onclick="updateProgress()"><i class="bi bi-check2-circle"></i> 提交</button>
+            </div>
+            <div id="prog-update-res"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-bar-chart"></i> 查询课程进度</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field-group" style="max-width:180px"><label>课程 ID</label><input id="p-qcid" value="1"></div>
+              <button class="btn btn-send" style="margin-top:22px" onclick="queryProgress()"><i class="bi bi-bar-chart-line"></i> 查询</button>
+            </div>
+            <div id="prog-query-res"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MY COURSES (TEACHER) ── -->
+      <div class="page" id="p-mycourses">
+        <div class="page-header">
+          <div class="page-title">我的课程</div>
+          <div class="page-sub">管理你发布的所有课程</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-title"><i class="bi bi-journals"></i> 课程列表</span>
+            <button class="btn btn-sm btn-send" onclick="loadTeacherCourses()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+          </div>
+          <div id="teacher-course-body"><div class="empty-state"><i class="bi bi-journals"></i>点击刷新加载</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-megaphone"></i> 发布草稿课程</span></div>
+          <div class="card-body">
+            <div class="alert alert-info"><i class="bi bi-info-circle"></i>将草稿状态的课程发布后，学生即可搜索和学习。</div>
+            <div class="field-row">
+              <div class="field-group" style="max-width:180px"><label>课程 ID</label><input id="pub-id" value="1"></div>
+              <button class="btn btn-success" style="margin-top:22px" onclick="publishCourse()"><i class="bi bi-megaphone-fill"></i> 立即发布</button>
+            </div>
+            <div id="publish-res"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CREATE COURSE (TEACHER) ── -->
+      <div class="page" id="p-create">
+        <div class="page-header">
+          <div class="page-title">创建课程</div>
+          <div class="page-sub">填写信息后创建，默认为草稿状态，前往「我的课程」发布</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-plus-circle"></i> 课程信息</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field-group" style="flex:2"><label>课程标题 *</label><input id="c-title" placeholder="例：Go 后端开发实战"></div>
+              <div class="field-group"><label>难度</label>
+                <select id="c-level">
+                  <option value="beginner">入门</option>
+                  <option value="intermediate">进阶</option>
+                  <option value="advanced">高级</option>
+                </select>
+              </div>
+              <div class="field-group" style="max-width:110px"><label>价格(¥)</label><input id="c-price" type="number" value="0"></div>
+            </div>
+            <div class="field-group" style="margin-bottom:16px">
+              <label>课程简介</label>
+              <textarea id="c-desc" style="font-family:var(--sans);font-size:14px;min-height:100px" placeholder="介绍课程内容、目标和适合人群…"></textarea>
+            </div>
+            <div class="field-group" style="margin-bottom:20px"><label>封面图 URL（可选）</label><input id="c-cover" placeholder="https://…"></div>
+            <button class="btn btn-send" onclick="createCourse()"><i class="bi bi-send"></i> 创建课程</button>
+            <div id="create-res" style="margin-top:16px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DEBUG ── -->
+      <div class="page" id="p-debug">
+        <div class="page-header">
+          <div class="page-title">API 控制台</div>
+          <div class="page-sub">自由构造请求，调试任意接口 · <kbd style="font-size:11px;padding:2px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px">Ctrl+Enter</kbd> 发送</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-header-title"><i class="bi bi-terminal"></i> 请求构造器</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field-group" style="max-width:110px"><label>Method</label>
+                <select id="d-method" onchange="toggleBody()">
+                  <option>GET</option><option selected>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option>
+                </select>
+              </div>
+              <div class="field-group" style="flex:1"><label>路径</label><input id="d-path" placeholder="/api/v1/…" value="/api/v1/courses"></div>
+              <div class="field-group" style="max-width:150px"><label>Token</label>
+                <select id="d-auth"><option value="yes">使用当前 Token</option><option value="no">不带 Token</option></select>
+              </div>
+              <button class="btn btn-send" style="margin-top:22px" onclick="sendDebug()"><i class="bi bi-send-fill"></i> Send</button>
+            </div>
+            <div id="d-body-wrap">
+              <div class="field-group"><label>Request Body (JSON)</label><textarea id="d-body" style="min-height:120px" placeholder='{"key":"value"}'></textarea></div>
+            </div>
+            <div style="margin-bottom:16px">
+              <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">快速模板</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px" id="d-templates"></div>
+            </div>
+            <div id="d-res"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── HEALTH ── -->
+      <div class="page" id="p-health">
+        <div class="page-header">
+          <div class="page-title">健康检查</div>
+          <div class="page-sub">检测后端服务运行状态</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-title"><i class="bi bi-heart-pulse"></i> GET /health</span>
+            <button class="btn btn-sm btn-send" onclick="checkHealth()"><i class="bi bi-arrow-clockwise"></i> 检测</button>
+          </div>
+          <div class="card-body" id="health-body"><div class="empty-state"><i class="bi bi-wifi-off"></i>点击检测按钮</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════
+// STATE
+// ══════════════════════════════════
+let S = {
+  token: localStorage.getItem('edu_token')||'',
+  user:  JSON.parse(localStorage.getItem('edu_user')||'null'),
+  logs:  [],
+  role:  'student',
+};
+const BASE=()=>document.getElementById('baseUrlInput').value.replace(/\/$/,'');
+
+// ══════════════════════════════════
+// HTTP
+// ══════════════════════════════════
+async function req(method,path,body,auth=true){
+  const h={'Content-Type':'application/json'};
+  if(auth&&S.token) h['Authorization']='Bearer '+S.token;
+  const opts={method,headers:h};
+  if(body&&/POST|PUT|PATCH/.test(method)) opts.body=JSON.stringify(body);
+  const t=Date.now(); let status=0,data=null,raw='';
+  try{
+    const r=await fetch(BASE()+path,opts);
+    status=r.status; raw=await r.text();
+    try{data=JSON.parse(raw)}catch{data=raw}
+  }catch(e){raw=JSON.stringify({error:'网络请求失败',detail:e.message})}
+  const ms=Date.now()-t;
+  addLog(method,path,status,ms);
+  return{status,data,raw,ms};
+}
+
+// ══════════════════════════════════
+// AUTH
+// ══════════════════════════════════
+let curTab='login';
+function switchTab(t){
+  curTab=t;
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',(i===0)===(t==='login')));
+  document.getElementById('login-form').style.display=t==='login'?'':'none';
+  document.getElementById('register-form').style.display=t==='register'?'':'none';
+  clearAuthMsg();
+}
+function pickRole(r,el){S.role=r;document.querySelectorAll('.role-opt').forEach(e=>e.classList.remove('active'));el.classList.add('active')}
+function setAuthMsg(msg,type='error'){const el=document.getElementById('authMsg');el.textContent=msg;el.className='auth-msg '+type}
+function clearAuthMsg(){const el=document.getElementById('authMsg');el.className='auth-msg';el.textContent=''}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pwd=document.getElementById('loginPwd').value;
+  if(!email||!pwd){setAuthMsg('请填写邮箱和密码');return}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.innerHTML='<i class="bi bi-hourglass-split spin"></i> 登录中…';
+  const{status,data}=await req('POST','/api/v1/auth/login',{email,password:pwd},false);
+  btn.disabled=false;btn.innerHTML='<i class="bi bi-box-arrow-in-right"></i> 登录';
+  if(status===200&&data?.data?.token){saveSession(data.data.token,data.data.user);enterApp()}
+  else setAuthMsg(data?.message||'登录失败，请检查账号密码');
+}
+
+async function doRegister(){
+  const username=document.getElementById('regUsername').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pwd=document.getElementById('regPwd').value;
+  if(!username||!email||!pwd){setAuthMsg('请填写所有必填项');return}
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true;btn.innerHTML='<i class="bi bi-hourglass-split spin"></i> 注册中…';
+  const{status,data}=await req('POST','/api/v1/auth/register',{username,email,password:pwd,role:S.role},false);
+  btn.disabled=false;btn.innerHTML='<i class="bi bi-person-plus"></i> 注册账号';
+  if(status===200&&data?.data?.token){
+    setAuthMsg('注册成功！正在进入…','success');
+    saveSession(data.data.token,data.data.user);
+    setTimeout(enterApp,700);
+  }else setAuthMsg(data?.message||'注册失败，用户名或邮箱已存在');
+}
+
+function quickFill(role){
+  const m={student:{email:'student01@test.com',password:'123456'},teacher:{email:'teacher01@test.com',password:'123456'}};
+  document.getElementById('loginEmail').value=m[role].email;
+  document.getElementById('loginPwd').value=m[role].password;
+}
+
+function saveSession(token,user){
+  S.token=token;S.user=user;
+  localStorage.setItem('edu_token',token);
+  localStorage.setItem('edu_user',JSON.stringify(user));
+}
+function logout(){
+  S.token='';S.user=null;S.logs=[];
+  localStorage.removeItem('edu_token');localStorage.removeItem('edu_user');
+  document.getElementById('app-screen').classList.remove('visible');
+  document.getElementById('auth-screen').style.display='flex';
+  toast('已退出登录','info');
+}
+
+// ══════════════════════════════════
+// APP INIT
+// ══════════════════════════════════
+function enterApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').classList.add('visible');
+  const u=S.user; if(!u)return;
+  // avatar
+  const av=document.getElementById('userAvatar');
+  av.className='user-avatar av-'+u.role;
+  av.textContent=(u.nickname||u.username||'?')[0].toUpperCase();
+  document.getElementById('uname').textContent=u.nickname||u.username;
+  document.getElementById('urole').textContent={student:'学生',teacher:'教师',admin:'管理员'}[u.role]||u.role;
+  // nav
+  const isT=u.role==='teacher'||u.role==='admin';
+  const isS=u.role==='student'||u.role==='admin';
+  document.getElementById('student-nav').style.display=isS?'':'none';
+  document.getElementById('teacher-nav').style.display=isT?'':'none';
+  initDash(); initTemplates(); go('dashboard');
+}
+
+function initDash(){
+  const u=S.user, isT=u.role==='teacher';
+  document.getElementById('dash-welcome').textContent=`欢迎回来，${u.nickname||u.username} 👋`;
+  document.getElementById('dash-sub').textContent=`当前角色：${{student:'学生',teacher:'教师',admin:'管理员'}[u.role]}  ·  ${new Date().toLocaleDateString('zh-CN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+  document.getElementById('stats-grid').innerHTML=isT?`
+    <div class="stat-card sc-blue"><div class="stat-icon">📚</div><div class="stat-val" id="sv-total">-</div><div class="stat-label">我的课程</div></div>
+    <div class="stat-card sc-green"><div class="stat-icon">✅</div><div class="stat-val" id="sv-pub">-</div><div class="stat-label">已发布</div></div>
+    <div class="stat-card sc-orange"><div class="stat-icon">📝</div><div class="stat-val" id="sv-draft">-</div><div class="stat-label">草稿</div></div>
+  `:`
+    <div class="stat-card sc-blue"><div class="stat-icon">🎓</div><div class="stat-val" id="sv-total">-</div><div class="stat-label">可选课程</div></div>
+    <div class="stat-card sc-green"><div class="stat-icon">📈</div><div class="stat-val" id="sv-rec">-</div><div class="stat-label">进度记录</div></div>
+  `;
+  document.getElementById('role-guide-text').innerHTML=isT
+    ?'<strong>教师操作流程：</strong>① 点击「创建课程」填写信息 → ② 前往「我的课程」找到草稿 → ③ 点击「发布」，学生即可学习'
+    :'<strong>学生操作流程：</strong>① 点击「浏览课程」查看已发布课程 → ② 在「学习进度」更新观看状态 → ③ 查询整体完成情况';
+}
+
+// ══════════════════════════════════
+// ROUTING
+// ══════════════════════════════════
+function go(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page=document.getElementById('p-'+name);
+  const nav=document.getElementById('n-'+name);
+  if(page)page.classList.add('active');
+  if(nav)nav.classList.add('active');
+  const T={dashboard:'概览',profile:'个人信息',browse:'浏览课程',progress:'学习进度',mycourses:'我的课程',create:'创建课程',debug:'API 控制台',health:'健康检查'};
+  document.getElementById('topbarTitle').textContent=T[name]||'';
+}
+
+// ══════════════════════════════════
+// PROFILE
+// ══════════════════════════════════
+async function loadProfile(){
+  const{status,data,raw,ms}=await req('GET','/api/v1/users/me');
+  const el=document.getElementById('profile-content');
+  if(status===200&&data?.data){
+    const u=data.data;
+    el.innerHTML=`<div class="info-grid">
+      ${ii('ID',u.id)} ${ii('用户名',u.username)} ${ii('邮箱',u.email)} ${ii('昵称',u.nickname||'-')}
+      ${ii('角色',`<span class="tag ${u.role==='teacher'?'tg-orange':'tg-blue'}">${u.role}</span>`)}
+      ${ii('注册时间',ft(u.created_at))}
+      ${u.role==='teacher'?ii('职称',u.title||'-'):''}
+      ${u.role==='teacher'?ii('认证',u.is_verified?'<span class="tag tg-green">已认证</span>':'<span class="tag tg-gray">未认证</span>'):''}
+    </div>`;
+    toast('个人信息加载成功','success');
+  }else el.innerHTML=`<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i>${data?.message||'加载失败'}</div>`;
+  document.getElementById('profile-res').innerHTML=renderRes(status,raw,ms);
+}
+
+function ii(l,v){return`<div class="info-item"><div class="il">${l}</div><div class="iv">${v??'-'}</div></div>`}
+
+// ══════════════════════════════════
+// BROWSE
+// ══════════════════════════════════
+async function loadCourseList(){
+  const sz=document.getElementById('browseSize').value;
+  const{status,data,raw,ms}=await req('GET',`/api/v1/courses?page=1&page_size=${sz}`,null,false);
+  const el=document.getElementById('course-list-body');
+  if(status===200&&data?.data?.courses){
+    const cs=data.data.courses;
+    const sv=document.getElementById('sv-total'); if(sv)sv.textContent=data.data.total;
+    if(!cs.length){el.innerHTML='<div class="empty-state"><i class="bi bi-collection-play"></i>暂无已发布课程</div>';return}
+    el.innerHTML=`<div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>课程名称</th><th>教师</th><th>难度</th><th>价格</th><th>报名人数</th></tr></thead>
+      <tbody>${cs.map(c=>`<tr>
+        <td class="mono" style="color:var(--muted)">#${c.id}</td>
+        <td style="font-weight:600">${c.title}</td>
+        <td>${c.teacher?.nickname||c.teacher?.username||'-'}</td>
+        <td>${lvlTag(c.level)}</td>
+        <td>${c.price===0?'<span class="tag tg-green">免费</span>':`<span class="tag tg-orange">¥${c.price}</span>`}</td>
+        <td>${c.enroll_count}</td>
+      </tr>`).join('')}</tbody>
+    </table><div style="padding:10px 20px;font-size:12px;color:var(--muted)">共 ${data.data.total} 门课程</div></div>`;
+    toast(`加载了 ${cs.length} 门课程`,'success');
+  }else el.innerHTML=`<div class="alert alert-danger" style="margin:16px"><i class="bi bi-exclamation-triangle"></i>${data?.message||'加载失败'}</div>`;
+}
+
+async function loadCourseDetail(){
+  const id=document.getElementById('detail-id').value;
+  const{status,data,raw,ms}=await req('GET',`/api/v1/courses/${id}`,null,false);
+  document.getElementById('course-detail-res').innerHTML=renderRes(status,raw,ms);
+  if(status===200&&data?.data){
+    document.getElementById('p-cid').value=data.data.id;
+    document.getElementById('p-qcid').value=data.data.id;
+    toast(`课程「${data.data.title}」详情已加载`,'success');
+  }
+}
+
+// ══════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════
+async function updateProgress(){
+  const body={
+    course_id:parseInt(document.getElementById('p-cid').value),
+    chapter_id:parseInt(document.getElementById('p-chid').value),
+    watched_secs:parseInt(document.getElementById('p-secs').value)||0,
+    is_finished:document.getElementById('p-done').value==='true',
+  };
+  const{status,data,raw,ms}=await req('POST','/api/v1/progress',body);
+  document.getElementById('prog-update-res').innerHTML=renderRes(status,raw,ms);
+  if(status===200)toast('学习进度已更新 ✅','success');
+  else toast(data?.message||'更新失败','error');
+}
+
+async function queryProgress(){
+  const id=document.getElementById('p-qcid').value;
+  const{status,data,raw,ms}=await req('GET',`/api/v1/progress/courses/${id}`);
+  const el=document.getElementById('prog-query-res');
+  if(status===200&&data?.data){
+    const d=data.data, pct=Math.round(d.percentage||0);
+    const sv=document.getElementById('sv-rec'); if(sv)sv.textContent=d.details?.length||0;
+    el.innerHTML=`<div class="progress-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:700;font-size:15px">课程 #${d.course_id} 完成进度</span>
+        <span style="font-size:22px;font-weight:800;color:var(--primary)">${pct}%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${pct===100?'var(--success)':'var(--primary)'}"></div></div>
+      <div style="font-size:12px;color:var(--muted)">已完成 ${d.finished_chapters} / ${d.total_chapters} 章节</div>
+    </div>${renderRes(status,raw,ms)}`;
+    toast('进度查询成功','success');
+  }else{el.innerHTML=renderRes(status,raw,ms);toast(data?.message||'查询失败','error')}
+}
+
+// ══════════════════════════════════
+// TEACHER COURSES
+// ══════════════════════════════════
+async function loadTeacherCourses(){
+  const{status,data}=await req('GET','/api/v1/teachers/me/courses');
+  const el=document.getElementById('teacher-course-body');
+  if(status===200&&data?.data){
+    const cs=data.data;
+    const pub=cs.filter(c=>c.status==='published').length;
+    const sv1=document.getElementById('sv-total'),sv2=document.getElementById('sv-pub'),sv3=document.getElementById('sv-draft');
+    if(sv1)sv1.textContent=cs.length; if(sv2)sv2.textContent=pub; if(sv3)sv3.textContent=cs.length-pub;
+    if(!cs.length){el.innerHTML='<div class="empty-state"><i class="bi bi-journals"></i>还没有课程，前往「创建课程」开始吧</div>';return}
+    el.innerHTML=`<div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>课程名称</th><th>难度</th><th>价格</th><th>状态</th><th>章节数</th><th>报名数</th><th>操作</th></tr></thead>
+      <tbody>${cs.map(c=>`<tr>
+        <td class="mono" style="color:var(--muted)">#${c.id}</td>
+        <td style="font-weight:600">${c.title}</td>
+        <td>${lvlTag(c.level)}</td>
+        <td>${c.price===0?'<span class="tag tg-green">免费</span>':`¥${c.price}`}</td>
+        <td>${stTag(c.status)}</td>
+        <td>${c.chapter_count}</td>
+        <td>${c.enroll_count}</td>
+        <td>${c.status==='draft'?`<button class="btn btn-sm btn-success" onclick="quickPublish(${c.id})"><i class="bi bi-megaphone"></i> 发布</button>`:'<span class="text-muted" style="font-size:12px">已发布</span>'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+    toast('课程列表已刷新','success');
+  }else el.innerHTML=`<div class="alert alert-danger" style="margin:16px"><i class="bi bi-exclamation-triangle"></i>${data?.message||'加载失败'}</div>`;
+}
+
+async function quickPublish(id){
+  const{status,data}=await req('PATCH',`/api/v1/courses/${id}/publish`);
+  if(status===200){toast(`课程 #${id} 发布成功 🎉`,'success');loadTeacherCourses()}
+  else toast(data?.message||'发布失败','error');
+}
+
+async function publishCourse(){
+  const id=document.getElementById('pub-id').value;
+  const{status,data,raw,ms}=await req('PATCH',`/api/v1/courses/${id}/publish`);
+  document.getElementById('publish-res').innerHTML=renderRes(status,raw,ms);
+  if(status===200){toast(`课程 #${id} 发布成功 🎉`,'success');loadTeacherCourses()}
+  else toast(data?.message||'发布失败','error');
+}
+
+async function createCourse(){
+  const title=document.getElementById('c-title').value.trim();
+  if(!title){toast('请填写课程标题','error');return}
+  const body={title,description:document.getElementById('c-desc').value,price:parseFloat(document.getElementById('c-price').value)||0,level:document.getElementById('c-level').value,cover_url:document.getElementById('c-cover').value};
+  const{status,data,raw,ms}=await req('POST','/api/v1/courses',body);
+  document.getElementById('create-res').innerHTML=renderRes(status,raw,ms);
+  if(status===200&&data?.data){
+    toast(`课程「${data.data.title}」创建成功（ID: ${data.data.id}）`,'success');
+    document.getElementById('pub-id').value=data.data.id;
+    document.getElementById('c-title').value='';document.getElementById('c-desc').value='';
+  }else toast(data?.message||'创建失败','error');
+}
+
+// ══════════════════════════════════
+// HEALTH
+// ══════════════════════════════════
+async function checkHealth(){
+  const{status,data,raw,ms}=await req('GET','/health',null,false);
+  const el=document.getElementById('health-body');
+  if(status===200){
+    el.innerHTML=`<div style="text-align:center;padding:32px">
+      <div style="font-size:60px;margin-bottom:12px">🟢</div>
+      <div style="font-size:20px;font-weight:700;color:var(--success);margin-bottom:6px">服务运行正常</div>
+      <div class="mono" style="font-size:13px;color:var(--muted)">响应时间 ${ms}ms</div>
+      <div style="margin-top:20px">${renderRes(status,raw,ms)}</div>
+    </div>`;
+    toast('后端服务正常 🟢','success');
+  }else{
+    el.innerHTML=`<div style="text-align:center;padding:32px">
+      <div style="font-size:60px;margin-bottom:12px">🔴</div>
+      <div style="font-size:20px;font-weight:700;color:var(--danger);margin-bottom:6px">服务不可达</div>
+      <div style="font-size:13px;color:var(--muted)">检查后端是否启动，BASE URL 是否正确</div>
+    </div>`;
+    toast('后端不可达 🔴','error');
+  }
+}
+
+// ══════════════════════════════════
+// DEBUG CONSOLE
+// ══════════════════════════════════
+const TEMPLATES=[
+  {label:'课程列表',method:'GET',path:'/api/v1/courses?page=1&page_size=10',auth:'no',body:''},
+  {label:'课程详情',method:'GET',path:'/api/v1/courses/1',auth:'no',body:''},
+  {label:'我的信息',method:'GET',path:'/api/v1/users/me',auth:'yes',body:''},
+  {label:'教师课程',method:'GET',path:'/api/v1/teachers/me/courses',auth:'yes',body:''},
+  {label:'发布课程',method:'PATCH',path:'/api/v1/courses/1/publish',auth:'yes',body:''},
+  {label:'创建课程',method:'POST',path:'/api/v1/courses',auth:'yes',body:JSON.stringify({title:'示例课程',description:'描述',price:0,level:'beginner'},null,2)},
+  {label:'更新进度',method:'POST',path:'/api/v1/progress',auth:'yes',body:JSON.stringify({course_id:1,chapter_id:1,watched_secs:300,is_finished:false},null,2)},
+  {label:'查询进度',method:'GET',path:'/api/v1/progress/courses/1',auth:'yes',body:''},
+];
+
+function initTemplates(){
+  document.getElementById('d-templates').innerHTML=TEMPLATES.map((t,i)=>`
+    <button class="btn btn-sm btn-outline" onclick="applyTpl(${i})">
+      <span class="method m-${t.method.toLowerCase()}" style="padding:1px 5px;font-size:10px">${t.method}</span>${t.label}
+    </button>`).join('');
+}
+
+function applyTpl(i){
+  const t=TEMPLATES[i];
+  document.getElementById('d-method').value=t.method;
+  document.getElementById('d-path').value=t.path;
+  document.getElementById('d-auth').value=t.auth;
+  document.getElementById('d-body').value=t.body;
+  toggleBody();
+}
+
+function toggleBody(){
+  const m=document.getElementById('d-method').value;
+  document.getElementById('d-body-wrap').style.display=/POST|PUT|PATCH/.test(m)?'':'none';
+}
+
+async function sendDebug(){
+  const method=document.getElementById('d-method').value;
+  const path=document.getElementById('d-path').value;
+  const useAuth=document.getElementById('d-auth').value==='yes';
+  const bodyStr=document.getElementById('d-body').value.trim();
+  let body=null;
+  if(bodyStr){try{body=JSON.parse(bodyStr)}catch{toast('JSON 格式错误','error');return}}
+  const{status,raw,ms}=await req(method,path,body,useAuth);
+  document.getElementById('d-res').innerHTML=renderRes(status,raw,ms);
+}
+
+// ══════════════════════════════════
+// HELPERS
+// ══════════════════════════════════
+function renderRes(status,raw,ms){
+  const ok=status>=200&&status<300;
+  let hl=raw; try{hl=syntaxHL(JSON.stringify(JSON.parse(raw),null,2))}catch{}
+  const safe=raw.replace(/'/g,"\\'").replace(/\n/g,'\\n');
+  return`<div class="res-bar">
+    <span class="status-badge ${ok?'st-ok':'st-err'}">${status||'ERR'}</span>
+    <span style="font-size:12px;color:var(--muted)">${ok?'成功':'失败'}</span>
+    <span class="res-time">${ms}ms</span>
+    <button class="btn btn-sm btn-outline" style="margin-left:8px" onclick="navigator.clipboard.writeText('${safe}');toast('已复制','info')"><i class="bi bi-clipboard"></i></button>
+  </div><div class="res-body">${hl}</div>`;
+}
+
+function syntaxHL(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,m=>{
+      if(/^"/.test(m))return/:$/.test(m)?`<span class="jk">${m}</span>`:`<span class="js">${m}</span>`;
+      if(/true|false/.test(m))return`<span class="jb">${m}</span>`;
+      if(/null/.test(m))return`<span class="jk">${m}</span>`;
+      return`<span class="ji">${m}</span>`;
+    });
+}
+
+function lvlTag(l){
+  const m={beginner:'tg-green',intermediate:'tg-blue',advanced:'tg-purple'};
+  const n={beginner:'入门',intermediate:'进阶',advanced:'高级'};
+  return`<span class="tag ${m[l]||'tg-gray'}">${n[l]||l}</span>`;
+}
+function stTag(s){
+  const m={draft:'tg-gray',published:'tg-green',archived:'tg-orange'};
+  const n={draft:'草稿',published:'已发布',archived:'已归档'};
+  return`<span class="tag ${m[s]||'tg-gray'}">${n[s]||s}</span>`;
+}
+function ft(t){if(!t)return'-';return new Date(t).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
+
+// ══════════════════════════════════
+// TOAST
+// ══════════════════════════════════
+function toast(msg,type='info'){
+  const icons={success:'bi-check-circle-fill',error:'bi-exclamation-circle-fill',info:'bi-info-circle-fill'};
+  const colors={success:'var(--success)',error:'var(--danger)',info:'var(--primary)'};
+  const el=document.createElement('div');
+  el.className=`toast toast-${type}`;
+  el.innerHTML=`<i class="bi ${icons[type]}" style="color:${colors[type]}"></i><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.remove(),300)},3000);
+}
+
+// ══════════════════════════════════
+// LOG
+// ══════════════════════════════════
+function addLog(method,path,status,ms){
+  S.logs.unshift({method,path,status,ms,time:new Date().toLocaleTimeString()});
+  if(S.logs.length>30)S.logs.pop();
+  const el=document.getElementById('log-table');if(!el)return;
+  el.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>时间</th><th>方法</th><th>路径</th><th>状态</th><th>耗时</th></tr></thead>
+    <tbody>${S.logs.map(l=>`<tr>
+      <td class="mono text-muted">${l.time}</td>
+      <td><span class="method m-${l.method.toLowerCase()}">${l.method}</span></td>
+      <td class="mono" style="font-size:12px">${l.path}</td>
+      <td><span class="tag ${l.status>=200&&l.status<300?'tg-green':'tg-gray'}">${l.status||'ERR'}</span></td>
+      <td class="mono text-muted">${l.ms}ms</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    if(document.getElementById('p-debug')?.classList.contains('active')){e.preventDefault();sendDebug()}
+  }
+  if(e.key==='Enter'&&document.getElementById('auth-screen').style.display!=='none'){
+    if(curTab==='login')doLogin(); else doRegister();
+  }
+});
+
+// ══════════════════════════════════
+// BOOT
+// ══════════════════════════════════
+(function(){
+  toggleBody();
+  if(S.token&&S.user)enterApp();
+})();
+</script>
+</body>
+</html>
